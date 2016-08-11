@@ -3,6 +3,7 @@ from sedpy import ds9region
 
 
 __all__ = ["read_brown_apertures", "read_brown_coordinates",
+           "read_sings_apertures",
 #           "process_aperture_line", "process_coordinate_line",
            "make_ds9_region"]
 
@@ -30,7 +31,11 @@ def make_ds9_region(info, **extras):
 
 
 def read_sings_apertures():
-    pass
+    #235749.9 −323525
+    cat = {}
+    cat['ngc7793'] = {'ra':359.4579166666667, 'dec':-32.590277,
+                   'a':716/2., 'b':526/2., 'PA':98,}
+    return cat
 
 
 def read_brown_apertures(cat={}, aperturefile='data/brown_apertures.txt'):
