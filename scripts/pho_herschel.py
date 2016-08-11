@@ -12,11 +12,10 @@ def find_images(imnames, galaxyname):
     return possible
     
 
-def measure_pacs_flux(imagenames, gal_info):
+def measure_pacs_flux(imagenames, reg):
     """Measure fluxes in background subtracted Herschel PACS imaging.
     """
     pacsbands = ['pacs70', 'pacs100', 'pacs160']
-    reg = make_ds9_region(gal_info)
     fluxes, uncertainties, bands = [], [], []
     for imname in imagenames:
         image = pyfits.getdata(imname)
@@ -33,18 +32,15 @@ def measure_pacs_flux(imagenames, gal_info):
     return fluxes, uncertainties, bands
 
 
-def measure_spire_flux(imagenames, gal_info):
+def measure_spire_flux(imagenames, reg):
     """Measure fluxes in background subtracted Herschel SPIRE imaging, given as
     a list of filenames.
     """
     spirebands = ['spire250', 'spire350', 'spire500']
-    # make a ds9 region object from the aperture data for this galaxy
-    reg = make_ds9_region(gal_info)
     # set up output
     fluxes, uncertainties, bands = [], [], []
     # loop over images
     for imname in imagenames:
-        
         # Read the image data and header
         im = pyfits.getdata(imname)
         hdr = pyfits.getheader(imname)
@@ -93,12 +89,14 @@ if __name__ == "__main__":
                 fcat[i][k] = cat[name][k]
             except:
                 pass
+        # make a ds9 region object from the aperture data for this galaxy
+        reg = make_ds9_region(cat[name])
         # Find (background subtracted) images that might be of this galaxy
         thispacs = find_images(pacs, name)
         thisspire = find_images(spire, name)
         # Measure the fluxes of these images in the Brown apertures
-        pflux, punc, pband = measure_pacs_flux(thispacs, cat[name])
-        sflux, sunc, sband = measure_spire_flux(thisspire, cat[name])
+        pflux, punc, pband = measure_pacs_flux(thispacs, reg)
+        sflux, sunc, sband = measure_spire_flux(thisspire, reg)
         if (len(pflux) == 0) and (len(sflux) ==0):
             fcat[i]['flag'] = 1
         for f, u, b in zip(pflux+sflux, punc+sunc, pband+sband):

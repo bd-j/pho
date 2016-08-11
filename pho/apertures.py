@@ -8,21 +8,31 @@ __all__ = ["read_brown_apertures", "read_brown_coordinates",
 
 
 def make_ds9_region(info, **extras):
-    """Given a dictionary of region info (with center, dimensions, and PA),
-    build and return a ds9 region Polygon object describing this rectangle as a
-    serties of vertices
+    """Given a dictionary of region info (ra, dec, PA and width, height or a,
+    b), build and return a ds9 region. If 'width' is a key of the dictionary,
+    returns a Polygon object describing this rectangle as a serties of
+    vertices, otherwise returns an Ellipse object.
     """
-    # get coordinates of vertices
-    ra, dec = dumb_corners(**info)
-    # make a list of ["ra","dec",....] for the vertices
-    defstring = [str(v) for pair in zip(ra, dec) for v in pair]
-    # Join the list of string coordinates
-    defstring = ','.join(defstring)
-    # Now instantiate the region object
-    reg = ds9region.Polygon(defstring)
-    return reg
+    if 'width' in info:
+        # get coordinates of vertices
+        ra, dec = dumb_corners(**info)
+        # make a list of ["ra","dec",....] for the vertices
+        defstring = [str(v) for pair in zip(ra, dec) for v in pair]
+        # Join the list of string coordinates
+        defstring = ','.join(defstring)
+        # Now instantiate the region object
+        reg = ds9region.Polygon(defstring)
+        return reg
+    elif 'a' in info:
+        # deg, deg, arcsec, arcsec, deg
+        defstring = '{ra},{dec},{a},{b},{PA}'.format(**info)
+        return ds9region.Ellipse(defstring)
 
-    
+
+def read_sings_apertures():
+    pass
+
+
 def read_brown_apertures(cat={}, aperturefile='data/brown_apertures.txt'):
     """Read the Brown et al. aperture data from a text file and return a
     dictionary with the aperture data dictionaries (height, width, PA, and
