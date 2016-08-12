@@ -65,7 +65,12 @@ def photometer(image, header, regions, pad=[0,0], mef=False):
     # Loop over regions
     for region in regions:
         # Find which pixels are in the region...
-        sel = region.contains(points=points, fast=False, pad=pad)
+        if region.shape == 'polygon':
+            # Use RA, Dec, because figuring out the conventions is a nightmare
+            sel = region.contains(points=points, wcs=wcs, fast=False, pad=pad)
+        else:
+            # Use x, y because equation for ellipse in shperical is a disaster.
+            sel = region.contains(x=xx.flatten(), y=yy.flatten(), wcs=None)
         # sum the image in these pixels and attach that sum to the output list
         flux.append(np.nansum(flatim[sel]))
 

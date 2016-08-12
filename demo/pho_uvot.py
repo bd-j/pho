@@ -21,7 +21,11 @@ def load_uvot_images(galaxy, band, imdir=''):
     info = {'root': imroot, 'band': band}
     
     names = ['{root}_t{band}.fits', '{root}_t{band}_ex.fits', '{root}_t{band}_lss.fits']
-    hdr = pyfits.getheader(names[0].format(**info), 1)
+    #print(names[0].format(**info))
+    try:
+        hdr = pyfits.getheader(names[0].format(**info), 1)
+    except:
+        hdr = pyfits.getheader(names[0].format(**info), 0)
     images = [pyfits.getdata(n.format(**info)) for n in names]
 
     names = ['{root}_bkg.fits', '{root}_reg.fits', '{root}_reg20.fits']
@@ -107,7 +111,7 @@ if __name__ == "__main__":
     # Loop over galaxies filling catalog with photometry
     for i, name in enumerate(galaxy_names):
         fcat[i]['name'] = name
-        # skip galaxies without aperture info
+        # Skip galaxies without aperture info
         if name not in cat:
             fcat[i]['flag'] = -99
             continue
@@ -117,19 +121,21 @@ if __name__ == "__main__":
                 fcat[i][k] = cat[name][k]
             except:
                 pass
-        # make a ds9 region object from the aperture data for this galaxy
+        # Make a ds9 region object from the aperture data for this galaxy
         reg = make_ds9_region(cat[name])
         # Measure the uvot fluxes in the aperture
         flux, unc, uband = measure_uvot_flux(name, reg, imdir=imdir)
+        # Put the flux in the catalog
         if (len(flux) == 0):
             fcat[i]['flag'] = 1
         for f, u, b in zip(flux, unc, uband):
-            fcat[i][b] = f
-            fcat[i][b + '_unc'] = u
+            bb = 'uvot_{}'.format(b)
+            fcat[i][bb] = f
+            fcat[i][bb + '_unc'] = u
 
-
+    # Write out the catalog
     h = pyfits.hdu.table.BinTableHDU(fcat)
-    h.header['FlUXUNIT'] = 'counts/sec'
+    h.header['FLUXUNIT'] = 'counts/sec'
     h.header['PAUNIT'] = 'Degrees E of N'
     h.header['APUNIT'] = 'Arcseconds'
     pyfits.writeto('uvot.{}_apertures.flux.fits'.format(apname), fcat, h.header, clobber=True)
