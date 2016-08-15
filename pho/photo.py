@@ -8,7 +8,7 @@ import astropy.wcs as pywcs
 __all__ = ["photometer"]
 
 
-def photometer(image, header, regions, pad=[0,0], mef=False):
+def photometer(image, header, regions, pad=[0, 0], mef=False):
     """Given an image (result of pyfits.getdata), a FITS header (result of
     pyfits.getheader), and a set of regions, produce total fluxes within those
     regions.  Returns a flux, a platescale, and a flux unit if available in the
@@ -59,7 +59,7 @@ def photometer(image, header, regions, pad=[0,0], mef=False):
         ra, dec = wcs.wcs_pix2world(xx.flatten(), yy.flatten(), 0)
     ra = ra.flatten()
     dec = dec.flatten()
-    points = np.vstack((ra,dec)).T
+    points = np.vstack((ra, dec)).T
     flatim = image.flatten()
     flux = []
     # Loop over regions
@@ -75,4 +75,3 @@ def photometer(image, header, regions, pad=[0,0], mef=False):
         flux.append(np.nansum(flatim[sel]))
 
     return np.array(flux), ps, header.get('BUNIT', None)
-

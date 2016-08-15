@@ -4,7 +4,7 @@ from sedpy import ds9region
 
 __all__ = ["read_brown_apertures", "read_brown_coordinates",
            "read_sings_apertures",
-#           "process_aperture_line", "process_coordinate_line",
+           # "process_aperture_line", "process_coordinate_line",
            "make_ds9_region"]
 
 
@@ -31,10 +31,10 @@ def make_ds9_region(info, **extras):
 
 
 def read_sings_apertures():
-    #235749.9 −323525
+    # 235749.9 −323525
     cat = {}
-    cat['ngc7793'] = {'ra':359.4579166666667, 'dec':-32.590277,
-                   'a':716/2., 'b':526/2., 'PA':98,}
+    cat['ngc7793'] = {'ra': 359.4579166666667, 'dec': -32.590277,
+                      'a': 716 / 2., 'b': 526 / 2., 'PA': 98, }
     return cat
 
 
@@ -54,7 +54,7 @@ def read_brown_apertures(cat={}, aperturefile='data/brown_apertures.txt'):
             # We haven't hit the end-of-hdr indicator, go to the next i
             continue
         n, h, w, p, s = process_aperture_line(line)
-        aperture = {'height':h, 'width':w, 'PA':p, 'specref':s}
+        aperture = {'height': h, 'width': w, 'PA': p, 'specref': s}
         if n in cat:
             cat[n].update(aperture)
         else:
@@ -67,7 +67,7 @@ def process_aperture_line(line):
     info.
     """
     cols = line.split('\t')
-    name = cols[0].lower().replace(' ','')
+    name = cols[0].lower().replace(' ', '')
     height, width = [float(c.strip()) for c in cols[1].split('x')]
     pa = float(cols[2])
     specsource = cols[3]
@@ -91,21 +91,21 @@ def read_brown_coordinates(cat={}, coordfile='data/brown_coordinates.txt'):
             break
         n, ra, dec = process_coordinate_line(line)
         if n in cat:
-            cat[n].update({'ra':ra, 'dec':dec})
+            cat[n].update({'ra': ra, 'dec': dec})
         else:
-            cat[n] = {'ra':ra, 'dec':dec}
+            cat[n] = {'ra': ra, 'dec': dec}
     return cat
 
 
 def process_coordinate_line(line):
     cols = line.split('\t')
-    name = cols[0].lower().replace(' ','')
+    name = cols[0].lower().replace(' ', '')
     coords = [float(c) for c in cols[1].split()]
     ra = 15 * (coords[0] + coords[1] / 60. + coords[2] / 3600.)
     dec = (coords[3] + coords[4] / 60. + coords[5] / 3600.)
     if '-' in cols[1] and dec > 0:
         dec *= -1
-    
+
     return name, ra, dec
 
 
@@ -123,17 +123,16 @@ def dumb_corners(ra=None, dec=None, PA=None,
                         [-0.5, 0.5],
                         [0.5, 0.5],
                         [0.5, -0.5]])
-    newcorners = np.dot(corners * size[None, :], T) 
-    outra = ra + newcorners[:,0] / np.cos(np.deg2rad(dec))
-    outdec = dec + newcorners[:,1]
+    newcorners = np.dot(corners * size[None, :], T)
+    outra = ra + newcorners[:, 0] / np.cos(np.deg2rad(dec))
+    outdec = dec + newcorners[:, 1]
     return outra, outdec
 
 
 def smart_corners(ra=None, dec=None, PA=None,
-                 height=None, width=None):
-    #convert rotation axis and corners to cartesian coordinates
+                  height=None, width=None):
+    # Convert rotation axis and corners to cartesian coordinates
 
-    #build rotation matrix
+    # Build rotation matrix
 
     pass
-
