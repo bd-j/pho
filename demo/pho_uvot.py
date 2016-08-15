@@ -38,7 +38,7 @@ def load_uvot_images(galaxy, band, imdir=''):
     images = [pyfits.getdata(n.format(**info)) for n in names]
 
     masknames = ['bkg', 'reg', 'reg1', 'reg5', 'reg20']
-    masks = [pyfits.getdata('{root}_{mask}.fits'.format({'root':info['root'], 'mask':n}))
+    masks = [pyfits.getdata('{root}_{mask}.fits'.format(root=info['root'], mask=n))
             for n in masknames]
 
     return hdr, images, dict(zip(masknames, masks))
@@ -62,10 +62,6 @@ def measure_uvot_flux(galaxy, reg, foreground_reg=[],
                       coi_correct=False, coi_mask=None, **kwargs):
     """Measure fluxes in UVOT imaging from Hoversten.
 
-    :param coi_correct: (boolean, default: False)
-        If True, attempt to correct for coincidence loss using the Brown et
-        al. 2012 formula
-
     :param coi_mask: (string, default: 'none')
         A switch to turn on masking of the regions affected by coincidence
         loss. One of
@@ -76,6 +72,7 @@ def measure_uvot_flux(galaxy, reg, foreground_reg=[],
                     level or more
         * 'reg20' -- mask all regions affected by coincidence loss at the 20%
                      level or more
+        * 'brown' -- correct for co-i loss using the Brown et al. 2012 formula.
     """
     uvotbands = ['w1', 'w2', 'm2']
     fluxes, uncertainties = [], []
@@ -85,16 +82,17 @@ def measure_uvot_flux(galaxy, reg, foreground_reg=[],
         # Get a counts image for uncertainties
         counts = cps * (exp * resp)
         unc = np.sqrt(counts) / (exp * resp)
-        if coi_correct:
+        if coi_mask =='brown':
             # Brown CoI correction.  Assuimes 1" pixels
             corcps = brown_coi_correction(cps)
             unc = corcps / cps * unc
             counts = corcps * (exp * resp)
             cps = corcps
         # Get a background value (in c/s) using the bkg mask
-        bkg, bkg_unc = np.median(cps * masks['bkg']), 0.
+        bkg, bkg_unc = np.nanmedian(cps * masks['bkg']), 0.
         # Choose a mask
         m = masks.get(coi_mask, 1.0)
+        print(np.min(m), np.sum(m))#, m.shape)
         
         # Photometer the BG subtracted, masked image
         flux, ps, units = photometer((cps - bkg) * m, hdr, [reg] + foreground_reg, mef=False)
@@ -113,7 +111,7 @@ if __name__ == "__main__":
     # Run parameters
     apname = 'dale'
     imdir = '/Users/bjohnson/Codes/SED/pho/data/'
-    coi_mask = 'none'
+    coi_mask = 'brown' # 'none' | 'reg1' | 'reg5' | 'reg20' | 'brown'
 
     # Get a bunch of galaxy names that you want to photometer
     galaxy_names = glob.glob(imdir + '*/')
