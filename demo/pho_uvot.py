@@ -166,4 +166,4 @@ if __name__ == "__main__":
     h.header['PAUNIT'] = 'Degrees E of N'
     h.header['APUNIT'] = 'Arcseconds'
     h.header['COI_MASK'] = coi_mask
-    pyfits.writeto('uvot.{}_apertures.flux.fits'.format(apname), fcat, h.header, clobber=True)
+    pyfits.writeto('uvot.{}_apertures.mask_{}.flux.fits'.format(apname, mask_coi), fcat, h.header, clobber=True)
