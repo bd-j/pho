@@ -1,7 +1,6 @@
 import glob
 import numpy as np
 from sedpy import photometer, ds9region
-import astropy.io.fits as pyfits
 import astropy.wcs as pywcs
 
 
@@ -44,14 +43,14 @@ def photometer(image, header, regions, pad=[0, 0], mef=False):
     wcs = pywcs.WCS(header)
     # Get the pixel transformation matrix
     try:
-        cd = wcs.wcs.cd
-    except:
+        cd = wcs.wcs.cd[:2, :2]
+    except(AttributeError):
         # Sometimes full matrix isn't available...
-        cd = np.diag(wcs.wcs.cdelt[0:2])
+        cd = np.diag(wcs.wcs.cdelt[:2])
     # get the pixel dimensions, in arcsec
     ps = np.hypot(*cd*3600.)
     # get a huge list of x and y coordinates for each pixel
-    yy, xx = np.indices(image.shape)
+    yy, xx = np.indices(image.shape[:2])
     # convert these to ra, dec and put in an ndarray of shape (npix, 2)
     if mef:
         ra, dec, _ = wcs.wcs_pix2world(xx.flatten(), yy.flatten(), np.array([0]), 0)

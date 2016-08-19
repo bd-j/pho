@@ -1,8 +1,10 @@
+import glob, os
 import numpy as np
 
-from apertures import *
-from photo import *
+from pho.apertures import *
+from pho.photo import *
 
+import astropy.io.fits as pyfits
 
 def find_images(imnames, galaxyname):
     possible = []
@@ -64,23 +66,35 @@ def measure_spire_flux(imagenames, reg):
 
 
 if __name__ == "__main__":
-    # Read the brown aperture data
-    cat = read_brown_coordinates()
-    cat = read_brown_apertures(cat=cat)
+    # Run parameters
+    apname = 'dale'
+    imdir = '/Users/bjohnson/Projects/kingfish/data/imaging/'
+    apdir = '/Users/bjohnson/Codes/SED/pho/data/'
 
     # Get a bunch of image names
-    pacs = glob.glob('../imaging/kingfish_pacs_scanam_v17/*fits')
-    spire = glob.glob('../imaging/KINGFISH_SPIRE_v3.0_updated/*scan.fits')
+    pacs = glob.glob(os.path.join(imdir, 'kingfish_pacs_scanam_v17/*fits'))
+    spire = glob.glob(os.path.join(imdir, 'KINGFISH_SPIRE_v3.0_updated/*scan.fits'))
+
+    # Read the aperture data
+    if apname == 'dale':
+        cat = read_sings_apertures()
+        dimensions = ['a', 'b']
+    elif apname == 'brown':
+        cat = read_brown_coordinates(coordfile=os.path.join(apdir, 'brown_coordinates.txt'))
+        cat = read_brown_apertures(cat=cat, aperturefile=os.path.join(apdir, 'brown_apertures.txt'))
+        dimensions = ['width', 'height']
 
     # Build output catalog
-    fields = ['ra','dec','height', 'width', 'PA', 'flag',
+    fields = (['ra','dec'] + dimensions +
+              ['PA', 'flag',
               'pacs70', 'pacs70_unc', 'pacs100', 'pacs100_unc',
               'pacs160', 'pacs160_unc', 'spire250', 'spire250_unc',
               'spire350', 'spire350_unc', 'spire500', 'spire500_unc']
+              )
     dt = [('name', 'S20')] + [(f, np.float) for f in fields]
         
-    galaxy_names = cat.keys()
-    # galaxy_names = ['ngc3190']
+    #galaxy_names = cat.keys()
+    galaxy_names = ['ngc7793']
     fcat = np.zeros(len(galaxy_names), dtype=np.dtype(dt))
     for i, name in enumerate(galaxy_names):
         fcat[i]['name'] = name
@@ -108,6 +122,6 @@ if __name__ == "__main__":
     h.header['FlUXUNIT'] = 'Jy'
     h.header['PAUNIT'] = 'Degrees E of N'
     h.header['APUNIT'] = 'Arcseconds'
-    pyfits.writeto('kingfish.brownapertures.flux.fits', fcat, h.header, clobber=True)
+    pyfits.writeto('kingfish.{}_apertures.flux.fits'.format(apname), fcat, h.header, clobber=True)
 
 
