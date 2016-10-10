@@ -7,7 +7,7 @@ import astropy.wcs as pywcs
 __all__ = ["photometer"]
 
 
-def photometer(image, header, regions, pad=[0, 0], mef=False):
+def photometer(image, header, regions, pad=[0, 0], mef=False, debug=False, **extras):
     """Given an image (result of pyfits.getdata), a FITS header (result of
     pyfits.getheader), and a set of regions, produce total fluxes within those
     regions.  Returns a flux, a platescale, and a flux unit if available in the
@@ -53,14 +53,16 @@ def photometer(image, header, regions, pad=[0, 0], mef=False):
     yy, xx = np.indices(image.shape[:2])
     # convert these to ra, dec and put in an ndarray of shape (npix, 2)
     if mef:
-        ra, dec, _ = wcs.wcs_pix2world(xx.flatten(), yy.flatten(), np.array([0]), 0)
+        ra, dec, _ = wcs.wcs_pix2world(xx.flatten(), yy.flatten(), np.array([0]),
+                                       0, ra_dec_order=True)
     else:
-        ra, dec = wcs.wcs_pix2world(xx.flatten(), yy.flatten(), 0)
+        ra, dec = wcs.wcs_pix2world(xx.flatten(), yy.flatten(),
+                                    0, ra_dec_order=True)
     ra = ra.flatten()
     dec = dec.flatten()
     points = np.vstack((ra, dec)).T
     flatim = image.flatten()
-    flux = []
+    flux, regmask = [], []
     # Loop over regions
     for region in regions:
         # Find which pixels are in the region...
@@ -72,5 +74,10 @@ def photometer(image, header, regions, pad=[0, 0], mef=False):
             sel = region.contains(x=xx.flatten(), y=yy.flatten(), wcs=wcs)
         # sum the image in these pixels and attach that sum to the output list
         flux.append(np.nansum(flatim[sel]))
+        if debug:
+            regmask.append(sel.reshape(image.shape).astype(int))
 
-    return np.array(flux), ps, header.get('BUNIT', None)
+    if debug:
+        return np.array(flux), ps, regmask
+    else:
+        return np.array(flux), ps, header.get('BUNIT', None)

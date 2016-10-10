@@ -8,8 +8,9 @@ import astropy.io.fits as pyfits
 
 
 # -- UVOT AB magnitude zeropoints from Hoversten (priv. comm.) --
-uvot_zp_ab = {'w2': 17.30 + 1.755,
-              'm2': 16.86 + 1.690,
+# updated with vega-to-ab from Conroy
+uvot_zp_ab = {'w2': 17.30 + 1.82,
+              'm2': 16.86 + 1.76,
               'w1': 17.46 + 1.557,
               'uu': 18.35 + 1.031,
               }
@@ -59,13 +60,13 @@ def brown_coi_correction(cpspa):
 
 
 def measure_uvot_flux(galaxy, reg, foreground_reg=[],
-                      coi_correct=False, coi_mask=None, **kwargs):
+                      coi_mask=None, region_image=None, **kwargs):
     """Measure fluxes in UVOT imaging from Hoversten.
 
-    :param coi_mask: (string, default: 'none')
+    :param coi_mask: (string, default: None)
         A switch to turn on masking of the regions affected by coincidence
         loss. One of
-        * 'none' -- no masking
+        * None or 'none' -- no masking
         * 'reg1' -- mask all regions affected by coincidence loss at the 1%
                     level or more
         * 'reg5' -- mask all regions affected by coincidence loss at the 5%
@@ -73,6 +74,10 @@ def measure_uvot_flux(galaxy, reg, foreground_reg=[],
         * 'reg20' -- mask all regions affected by coincidence loss at the 20%
                      level or more
         * 'brown' -- correct for co-i loss using the Brown et al. 2012 formula.
+
+    :param region_image:
+        A string giving the base name for the region images.  The region image will be written to the result of
+        region_image.format(**{'galaxy':galaxy, 'band':band})
     """
     uvotbands = ['w1', 'w2', 'm2']
     fluxes, uncertainties = [], []
@@ -93,11 +98,21 @@ def measure_uvot_flux(galaxy, reg, foreground_reg=[],
         # Choose a mask
         m = masks.get(coi_mask, 1.0)
         print(np.min(m), np.sum(m))#, m.shape)
-        
+
+        print(region_image, (region_image is not None))
+        print([reg])
+        k = (cps - bkg) * m
+        debug = region_image is not None
         # Photometer the BG subtracted, masked image
-        flux, ps, units = photometer((cps - bkg) * m, hdr, [reg] + foreground_reg, mef=False)
+        flux, ps, blobs = photometer((cps - bkg) * m, hdr, [reg] + foreground_reg,
+                                     mef=False, debug=debug)
+        # Write out image if debugging
+        if region_image is not None:
+            pyfits.writeto(region_image.format(**{'galaxy':galaxy, 'band':band}),
+                           blobs[0], hdr)
         # Photometer the variance image (with bg_unc if it exists)
-        var, _, _ = photometer(m * unc**2 + bkg_unc**2, hdr, [reg] + foreground_reg, mef=False)
+        var, _, _ = photometer(m * unc**2 + bkg_unc**2, hdr, [reg] + foreground_reg,
+                               mef=False)
         # All units are counts/sec, convert to Jy
         zp = 10**(-0.4 * uvot_zp_ab[band])
         unc = 3631. * zp * np.sqrt(var)
@@ -109,6 +124,8 @@ def measure_uvot_flux(galaxy, reg, foreground_reg=[],
 
 if __name__ == "__main__":
     # Run parameters
+    region_image = None
+    region_image = 'uvot_regions/{galaxy}_{band}_region.fits'
     apname = 'dale'
     imdir = '/Users/bjohnson/Codes/SED/pho/data/'
     coi_mask = 'brown' # 'none' | 'reg1' | 'reg5' | 'reg20' | 'brown'
@@ -151,7 +168,8 @@ if __name__ == "__main__":
         # Make a ds9 region object from the aperture data for this galaxy
         reg = make_ds9_region(cat[name])
         # Measure the uvot fluxes in the aperture
-        flux, unc, uband = measure_uvot_flux(name, reg, imdir=imdir, coi_mask=coi_mask)
+        flux, unc, uband = measure_uvot_flux(name, reg, imdir=imdir, coi_mask=coi_mask,
+                                             region_image=region_image)
         # Put the flux in the catalog
         if (len(flux) == 0):
             fcat[i]['flag'] = 1
