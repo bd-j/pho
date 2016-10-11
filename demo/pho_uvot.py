@@ -109,7 +109,7 @@ def measure_uvot_flux(galaxy, reg, foreground_reg=[],
         # Write out image if debugging
         if region_image is not None:
             pyfits.writeto(region_image.format(**{'galaxy':galaxy, 'band':band}),
-                           blobs[0], hdr)
+                           blobs[0], hdr, clobber=True)
         # Photometer the variance image (with bg_unc if it exists)
         var, _, _ = photometer(m * unc**2 + bkg_unc**2, hdr, [reg] + foreground_reg,
                                mef=False)
