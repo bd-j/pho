@@ -94,7 +94,7 @@ def measure_uvot_flux(galaxy, reg, foreground_reg=[],
             counts = corcps * (exp * resp)
             cps = corcps
         # Get a background value (in c/s) using the bkg mask
-        bkg, bkg_unc = np.nanmedian(cps * masks['bkg']), 0.
+        bkg, bkg_unc = np.nanmean(cps[masks['bkg'].astype(bool)]), 0.
         # Choose a mask
         m = masks.get(coi_mask, 1.0)
         print(np.min(m), np.sum(m))#, m.shape)
